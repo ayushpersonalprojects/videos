@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Video Upload Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-image: url('1000109822 (1).jpg'); /* Replace with your image file name */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        h1 {
+            color: #7f2714;
+        }
+
+        p {
+            font-size: 14px;
+            color: #555;
+        }
+
+        #upload-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            text-align: center;
+        }
+
+        #upload-container img {
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #7f2714;
+        }
+
+        #upload-container span {
+            display: block;
+            font-size: 12px;
+            color: #7f2714;
+            margin-top: 5px;
+        }
+
+        #claim-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: center;
+        }
+
+        #claim-container img {
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+        }
+
+        #claim-container span {
+            display: block;
+            font-size: 12px;
+            color: #7f2714;
+            margin-top: 5px;
+        }
+
+        #cute-image {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+        }
+
+        #cute-image img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+        }
+
+        #video-list {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            justify-items: center;
+        }
+
+        video {
+            display: block;
+            margin: 10px auto;
+            max-width: 100%;
+            border: 2px solid #7f2714;
+            border-radius: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite"></script>
+</head>
+<body>
+    <h1>This webpage has been specially created for you by your future husband ❤️</h1>
+    <p>Upload your cute one minute clips for the next 10 days to claim your surprise</p>
+
+    <div id="claim-container">
+        <img src="pretty-cute-heart-illustration-with-isolated-background_742252-4536-Photoroom.png" alt="Claim your surprise" onclick="claimSurprise()"> <!-- Replace with your image file -->
+        <span>Claim Your Surprise</span>
+    </div>
+
+    <div id="upload-container">
+        <label for="video-upload">
+            <img src="kuromi-cute-1-Photoroom.png" alt="Click to upload your clip"> <!-- Replace with your image file -->
+        </label>
+        <input type="file" id="video-upload" accept="video/*">
+        <span>Click on the image to upload your clip</span>
+    </div>
+
+    <div id="cute-image">
+        <img src="8e6569c63c5b8ae820216231f28e9a14-Photoroom.png" alt="Cute Image"> <!-- Replace with your image file -->
+    </div>
+
+    <div id="video-list"></div>
+
+    <script>
+        const videoList = document.getElementById('video-list');
+        const videoUpload = document.getElementById('video-upload');
+        let videos = [];
+
+        // Store the last upload date to enforce one upload per day
+        let lastUploadDate = null;
+
+        videoUpload.addEventListener('change', (event) => {
+            const today = new Date().toDateString();
+            if (lastUploadDate === today) {
+                alert("You can only upload one video per day.");
+                return;
+            }
+
+            const file = event.target.files[0];
+            if (file && videos.length < 10) {
+                const url = URL.createObjectURL(file);
+                videos.push(url);
+                lastUploadDate = today;
+                updateVideoList();
+            } else if (videos.length >= 10) {
+                alert("You can only upload up to 10 videos.");
+            }
+        });
+
+        function updateVideoList() {
+            videoList.innerHTML = '';
+            videos.forEach((videoUrl, index) => {
+                const videoElement = document.createElement('video');
+                videoElement.src = videoUrl;
+                videoElement.controls = true;
+                const caption = document.createElement('p');
+                caption.textContent = `Video ${index + 1}`;
+                const container = document.createElement('div');
+                container.appendChild(videoElement);
+                container.appendChild(caption);
+                videoList.appendChild(container);
+            });
+        }
+
+        function claimSurprise() {
+            if (videos.length === 10) {
+                alert("Surprise claimed! All 10 videos are uploaded.");
+            } else {
+                alert(`Please upload ${10 - videos.length} more video(s) to claim your surprise!`);
+            }
+        }
+    </script>  
+    <script>
+        // Initialize Appwrite client
+        const client = new Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1') // Replace with your Appwrite endpoint
+            .setProject('6776cfbe000352cd38fb');       // Replace with your Appwrite project ID
+    
+        const storage = new Appwrite.Storage(client);
+        const bucketId = '6776d5ae001080c281b1';        // Replace with your storage bucket ID
+    
+        const videoList = document.getElementById('video-list');
+        const videoUpload = document.getElementById('video-upload');
+    
+        let videos = [];
+    
+        // Fetch existing videos from Appwrite storage on load
+        async function fetchVideos() {
+            try {
+                const response = await storage.listFiles(bucketId);
+                videos = response.files.map(file => ({
+                    id: file.$id,
+                    name: file.name,
+                    url: `${client.config.endpoint}/storage/buckets/${bucketId}/files/${file.$id}/view?project=${client.config.project}`
+                }));
+                updateVideoList();
+            } catch (error) {
+                console.error('Error fetching videos:', error);
+            }
+        }
+    
+        // Upload video to Appwrite storage
+        videoUpload.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+    
+            try {
+                const today = new Date().toDateString();
+                if (videos.length >= 10) {
+                    alert("You can only upload up to 10 videos.");
+                    return;
+                }
+    
+                const response = await storage.createFile(bucketId, 'unique()', file);
+                const fileUrl = `${client.config.endpoint}/storage/buckets/${bucketId}/files/${response.$id}/view?project=${client.config.project}`;
+                videos.push({ id: response.$id, name: file.name, url: fileUrl });
+    
+                updateVideoList();
+            } catch (error) {
+                console.error('Error uploading video:', error);
+                alert('Error uploading video. Please try again.');
+            }
+        });
+    
+        // Update video list on the page
+        function updateVideoList() {
+            videoList.innerHTML = '';
+            videos.forEach((video, index) => {
+                const videoElement = document.createElement('video');
+                videoElement.src = video.url;
+                videoElement.controls = true;
+    
+                const caption = document.createElement('p');
+                caption.textContent = `Video ${index + 1}: ${video.name}`;
+    
+                const container = document.createElement('div');
+                container.appendChild(videoElement);
+                container.appendChild(caption);
+    
+                videoList.appendChild(container);
+            });
+        }
+    
+        // Claim surprise functionality
+        function claimSurprise() {
+            if (videos.length === 10) {
+                alert('Surprise claimed! All 10 videos are uploaded.');
+            } else {
+                alert(`Please upload ${10 - videos.length} more video(s) to claim your surprise!`);
+            }
+        }
+    
+        // Fetch videos on page load
+        fetchVideos();
+    </script>
+     
+</body>
+</html>
+
+
+
+
+
+
